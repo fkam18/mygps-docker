@@ -1,0 +1,6 @@
+docker image ls
+docker build -t fkam18/mygps
+docker push fkam18/mygps
+docker run -d -p 8081:80 --name mygps fkam18/mygps
+docker container ls
+

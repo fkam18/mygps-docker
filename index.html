@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="https://cdn.rawgit.com/Chalarangelo/mini.css/v3.0.1/dist/mini-default.min.css">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script>
+function getLocation() {
+    var x = document.getElementById("gps");
+    checkStore();
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(showPosition, noLocation);
+    } else {
+        x.innerHTML = "Geolocation is not supported by this browser.";
+    }
+}
+function noLocation() {
+  alert("no location found");
+  storeEvent(0,0);
+  showEvents();
+}
+function showPosition(position) {
+    var x = document.getElementById("gps");
+//    x.innerHTML = "Latitude: " + position.coords.latitude + 
+//    "<br>Longitude: " + position.coords.longitude; 
+    storeEvent(position.coords.latitude, position.coords.longitude);
+    showEvents();
+}
+function storeEvent(lat,lon) {
+  var ts = dateTime(new Date());
+  var memo = document.getElementById("memo").value;
+  if (memo == "") {
+    memo = "memo";
+  }
+  var event = {timestamp:ts, memo:memo, lat:lat, lon:lon};
+  var keycnt = window.localStorage.getItem('keycnt');
+  var key = "event" + keycnt;
+  window.localStorage.setItem(key, JSON.stringify(event));
+  keycnt++;
+  window.localStorage.setItem('keycnt', keycnt);
+}
+
+function checkStore() {
+  var msg = document.getElementById("msg");
+  if (typeof(Storage) !== "undefined") {
+    var keycnt = initStore();
+    msg.innerHTML = "Events recorded: " + keycnt;
+  }
+  else {
+    msg.innerHTML = "no local store ";
+  }
+}
+function initStore() {
+  var keycnt = window.localStorage.getItem('keycnt');
+  if (keycnt === null || keycnt.length === 0) {
+    window.localStorage.clear();
+    window.localStorage.setItem('keycnt',0);
+    keycnt = 0;
+  }
+  else {
+    if (keycnt > 999) {
+      window.localStorage.clear();
+      window.localStorage.setItem('keycnt',0);
+      keycnt = 0;
+    }
+  }
+  return keycnt;
+}
+function showEvents() {
+  var cb = document.getElementById("clipboard");
+  var history = document.getElementById("history");
+  var keycnt = window.localStorage.getItem('keycnt');
+  var historytext = "";
+  for (let i=(keycnt - 1); i>=0; i--) {
+    var key = "event" + i;
+    var json = window.localStorage.getItem(key);
+    var ev = JSON.parse(json);
+    var lat = ev.lat;
+    var lon = ev.lon;
+    var ts = ev.timestamp;
+    var memo = ev.memo;
+    var line = `${ts} <a href="https://map.google.com/?q=${lat},${lon}" target="_blank">${memo}</a>`
+    historytext = historytext + line + "<BR>";
+    var line1 = `${ts},"${memo}",${lat},${lon}\n`;
+    cb.textContent = cb.value + line1;
+  }
+  history.innerHTML = historytext;
+  var msg=document.getElementById("msg");
+  msg.innerHTML = "Events: " +  keycnt;
+}
+
+function dateTime(date) {
+    var month = ("0" + (date.getMonth() + 1)).slice(-2);
+    var day  = ("0" + (date.getDate())).slice(-2);
+    var year = date.getFullYear();
+    var hour =  ("0" + (date.getHours())).slice(-2);
+    var min =  ("0" + (date.getMinutes())).slice(-2);
+    var seg = ("0" + (date.getSeconds())).slice(-2);
+    return year + "-" + month + "-" + day + " " + hour + ":" +  min + ":" + seg;
+}
+function copy2clipboard() {
+  var cb = document.getElementById("clipboard");
+//  cb.select();
+//  cb.setSelectionRange(0,99999);
+  navigator.clipboard.writeText(cb.value);
+  cb.textContent = "";
+  window.localStorage.clear();
+  window.localStorage.setItem('keycnt',0);
+  var history = document.getElementById("history");
+  history.innerHTML = "";
+  alert("events copied to clipboard; cleared");
+  var msg=document.getElementById("msg");
+  msg.innerHTML = "Events: 0";
+}
+</script>
+</head>
+<body onload="checkStore()">
+<h1>myGPS</h1>
+<div>
+<input type="text" placeholder="memo" maxlength=80 size=20 id="memo">
+<button id="but1" onclick="getLocation()">Save</button>
+<br>
+<!---- <button id="but2" onclick="showEvents()">Show</button>  ---->
+</div>
+<div>
+<button id="copyBut" onclick="copy2clipboard()">Archive</button>
+</div>
+<div>
+<p id="gps"></p>
+</div>
+<div>
+<p id="msg">myGPS</p>
+</div>
+<div>
+<p id="history"></p>
+</div>
+<textarea id="clipboard" name="clipboard" style="display:none;" rows="99" cols="80"></textarea>
+
+</body>
+</html>
